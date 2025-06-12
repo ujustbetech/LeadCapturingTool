@@ -113,7 +113,7 @@ const RegisteredUsers = () => {
 
       // ✅ WhatsApp Message
       await axios.post(
-        `https://graph.facebook.com/v19.0/${process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID}/messages`,
+        `https://graph.facebook.com/v19.0/712485631939049/messages`,
         {
           messaging_product: "whatsapp",
           to: formattedPhone,
@@ -135,7 +135,7 @@ const RegisteredUsers = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_WA_ACCESS_TOKEN}`,
+            Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `,
             "Content-Type": "application/json"
           }
         }
