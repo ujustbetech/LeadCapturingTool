@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
     return (
        <>
         <div className={navChange ? 'logoContainer expand' : 'logoContainer' }>
-             <div className="logo"><Image src={ujustbelogo} width={65} height={65} alt="search_bar" ></Image></div>
+             {/* <div className="logo"><Image src={ujustbelogo} width={65} height={65} alt="search_bar" ></Image></div> */}
             <div className="ham-menu-btn"  onClick={() => setnavChange(!navChange)}>
                 <span> </span>
                 <span>  </span>

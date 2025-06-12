@@ -11,10 +11,10 @@ const HomePage = () => {
   
     <div className='mainContainer'>
     <div className='logosContainer'>
-      <img src="/ujustlogo.png" alt="Logo" className="logo" />
+      {/* <img src="/ujustlogo.png" alt="Logo" className="logo" /> */}
     </div>
     <div style={{ padding: '20px' }}>
-      <h1>Welcome to the Event Management System</h1>
+      <h1>Welcome to the Event Management System</h1> 
     </div>
     </div>
     </>

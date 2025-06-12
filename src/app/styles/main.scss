@@ -17,6 +17,11 @@ $BellMT-fonts: "Libre Baskerville";
 $forum :'Forum';
 $italianfont:'Italianno', ;
 
+body{
+  margin: 0px !important;
+}
+
+
 .youtube-video {
   overflow: hidden;
   iframe {
