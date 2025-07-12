@@ -85,6 +85,7 @@ const [rating, setRating] = useState(0);
       setEmail('');
       setLocation('');
       setSelectedProducts([]);
+      setRating(0);
       fetchRegisteredUserCount();
 
       // ✅ Send WhatsApp message
