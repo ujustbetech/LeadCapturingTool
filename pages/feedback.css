@@ -19,6 +19,18 @@ body {
   /* Adjusted for better responsiveness */
   box-sizing: border-box;
 }
+.star-rating {
+  display: flex;
+  gap: 5px;
+}
+
+.star {
+  transition: color 0.2s;
+}
+
+.star.filled {
+  color: #f39c12;
+}
 
 /* Form container */
 .feedback-form-container {
