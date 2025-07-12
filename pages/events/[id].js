@@ -10,6 +10,7 @@ import '../feedback.css';
 const EventLoginPage = () => {
   const router = useRouter();
   const { id } = router.query;
+const [rating, setRating] = useState(0);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userName, setUserName] = useState('');
@@ -67,14 +68,16 @@ const EventLoginPage = () => {
 
     try {
       const userRef = doc(db, 'OREMeet', id, 'registeredUsers', phoneNumber);
-      await setDoc(userRef, {
-        name: userName,
-        phoneNumber,
-        email,
-        location,
-        selectedProducts,
-        registeredAt: new Date(),
-      });
+     await setDoc(userRef, {
+  name: userName,
+  phoneNumber,
+  email,
+  location,
+  selectedProducts,
+  rating, // <-- add this line
+  registeredAt: new Date(),
+});
+
 
       setSuccess('Thank you! Your response has been recorded.');
       setUserName('');
@@ -182,6 +185,21 @@ const EventLoginPage = () => {
                 <p>No products listed for this event.</p>
               )}
             </div>
+              <div className="input-group">
+  <label>Rate the Event (1 to 5)</label>
+  <div className="star-rating">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <span
+        key={star}
+        className={`star ${rating >= star ? 'filled' : ''}`}
+        onClick={() => !isEventEnded && setRating(star)}
+        style={{ cursor: isEventEnded ? 'not-allowed' : 'pointer', fontSize: '24px', color: rating >= star ? '#f39c12' : '#ccc' }}
+      >
+        ★
+      </span>
+    ))}
+  </div>
+</div>
           </div>
 
 
