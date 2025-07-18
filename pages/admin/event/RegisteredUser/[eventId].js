@@ -186,7 +186,7 @@ const RegisteredUsers = () => {
               <li className='form-row'>
                 <h4>Email<sup>*</sup></h4>
                 <div className='multipleitem'>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
               </li>
 
