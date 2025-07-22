@@ -24,6 +24,8 @@ const [rating, setRating] = useState(0);
   // Add these to your useState hooks:
   const [email, setEmail] = useState('');
   const [location, setLocation] = useState('');
+const [customerType, setCustomerType] = useState('');
+const [organization, setOrganization] = useState('');
 
 
   useEffect(() => {
@@ -68,15 +70,18 @@ const [rating, setRating] = useState(0);
 
     try {
       const userRef = doc(db, 'OREMeet', id, 'registeredUsers', phoneNumber);
-     await setDoc(userRef, {
+   await setDoc(userRef, {
   name: userName,
   phoneNumber,
   email,
   location,
   selectedProducts,
-  rating, // <-- add this line
+  rating,
+  customerType,
+  organization,
   registeredAt: new Date(),
 });
+
 
 
       setSuccess('Thank you! Your response has been recorded.');
@@ -138,89 +143,145 @@ const [rating, setRating] = useState(0);
 
 
 
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
 
-          <div className="input-group">
-            <label>Full Name</label>
-            <input type="text" name="fullName" value={userName} onChange={(e) => setUserName(e.target.value)}
-              disabled={isEventEnded} required />
-          </div>
-          <div className="input-group">
-            <label>Contact Number</label>
-            <input type="text" name="phoneNumber" value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              disabled={isEventEnded} required />
-          </div>
-          <div className="input-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isEventEnded}
-              required
-            />
-          </div>
-
-
-
-          <div className="input-group">
-            <label>Select Products</label>
-            <div className="checkbox-group">
-              {eventDetails?.productList?.length > 0 ? (
-                eventDetails.productList.map((product, idx) => (
-                  <div className="checkbox-item" key={idx}>
-                    <input
-                      type="checkbox"
-                      id={`product-${idx}`}
-                      value={product}
-                      checked={selectedProducts.includes(product)}
-                      onChange={() => handleProductSelection(product)}
-                      disabled={isEventEnded}
-                    />
-                    <label htmlFor={`product-${idx}`}>{product}</label>
-                  </div>
-                ))
-              ) : (
-                <p>No products listed for this event.</p>
-              )}
-            </div>
-              <div className="input-group">
-  <label>Rate the Event (1 to 5)</label>
-  <div className="star-rating">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <span
-        key={star}
-        className={`star ${rating >= star ? 'filled' : ''}`}
-        onClick={() => !isEventEnded && setRating(star)}
-        style={{ cursor: isEventEnded ? 'not-allowed' : 'pointer', fontSize: '24px', color: rating >= star ? '#f39c12' : '#ccc' }}
-      >
-        ★
-      </span>
-    ))}
+  {/* 1. Type of Customer */}
+  <div className="input-group">
+    <label>Type of Customer</label>
+    <select
+      value={customerType}
+      onChange={(e) => setCustomerType(e.target.value)}
+      disabled={isEventEnded}
+      required
+    >
+      <option value="">Select Type</option>
+      <option value="Retail">Retail</option>
+      <option value="Corporate">Corporate</option>
+      <option value="Individual">Individual</option>
+    </select>
   </div>
-</div>
-          </div>
 
+  {/* 2. Mobile Number */}
+  <div className="input-group">
+    <label>Mobile Number</label>
+    <input
+      type="text"
+      name="phoneNumber"
+      value={phoneNumber}
+      onChange={(e) => setPhoneNumber(e.target.value)}
+      disabled={isEventEnded}
+      required
+    />
+  </div>
 
-          <div className="input-group">
-            <label>Message</label>
-            <textarea
-              name="Message"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
+  {/* 3. Select Products */}
+  <div className="input-group">
+    <label>Select Products</label>
+    <div className="checkbox-group">
+      {eventDetails?.productList?.length > 0 ? (
+        eventDetails.productList.map((product, idx) => (
+          <div className="checkbox-item" key={idx}>
+            <input
+              type="checkbox"
+              id={`product-${idx}`}
+              value={product}
+              checked={selectedProducts.includes(product)}
+              onChange={() => handleProductSelection(product)}
               disabled={isEventEnded}
-              required
-            ></textarea>
+            />
+            <label htmlFor={`product-${idx}`}>{product}</label>
           </div>
+        ))
+      ) : (
+        <p>No products listed for this event.</p>
+      )}
+    </div>
+  </div>
 
-          <button className="submitbtns" type="submit" disabled={isEventEnded}>Submit</button>
+  {/* 4. Email */}
+  <div className="input-group">
+    <label>Email Address</label>
+    <input
+      type="email"
+      name="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      disabled={isEventEnded}
+      required
+    />
+  </div>
 
-          {isEventEnded && <p style={{ color: 'gray' }}>Registration is closed. The event has ended.</p>}
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          {success && <p style={{ color: 'green' }}>{success}</p>}
-        </form>
+  {/* 5. Company/Organization Name */}
+  <div className="input-group">
+    <label>Company / Organization Name</label>
+    <input
+      type="text"
+      value={organization}
+      onChange={(e) => setOrganization(e.target.value)}
+      disabled={isEventEnded}
+      required
+    />
+  </div>
+
+  {/* 6. Name of Customer */}
+  <div className="input-group">
+    <label>Name of Customer</label>
+    <input
+      type="text"
+      name="fullName"
+      value={userName}
+      onChange={(e) => setUserName(e.target.value)}
+      disabled={isEventEnded}
+      required
+    />
+  </div>
+
+  {/* 7. Message/Quality */}
+  <div className="input-group">
+    <label>Message / Quality</label>
+    <textarea
+      name="Message"
+      value={location}
+      onChange={(e) => setLocation(e.target.value)}
+      disabled={isEventEnded}
+      required
+    ></textarea>
+  </div>
+
+  {/* 8. Star Rating */}
+  <div className="input-group">
+    <label>Rate the Event (1 to 5)</label>
+    <div className="star-rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`star ${rating >= star ? 'filled' : ''}`}
+          onClick={() => !isEventEnded && setRating(star)}
+          style={{
+            cursor: isEventEnded ? 'not-allowed' : 'pointer',
+            fontSize: '24px',
+            color: rating >= star ? '#f39c12' : '#ccc',
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <button className="submitbtns" type="submit" disabled={isEventEnded}>
+    Submit
+  </button>
+
+  {isEventEnded && (
+    <p style={{ color: 'gray' }}>
+      Registration is closed. The event has ended.
+    </p>
+  )}
+  {error && <p style={{ color: 'red' }}>{error}</p>}
+  {success && <p style={{ color: 'green' }}>{success}</p>}
+</form>
+
 
       </div>
     </section>
