@@ -16,6 +16,8 @@ const RegisteredUsers = () => {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+const [customerType, setCustomerType] = useState('');
+const [organization, setOrganization] = useState('');
 
   const [availableProducts, setAvailableProducts] = useState([]); // dynamic products
 
@@ -50,16 +52,19 @@ const RegisteredUsers = () => {
 
         const users = snapshot.docs.map((doc, index) => {
           const data = doc.data();
-          return {
-            id: doc.id,
-            srNo: index + 1,
-            name: data.name || 'N/A',
-            phoneNumber: data.phoneNumber || 'N/A',
-            email: data.email || 'N/A',
-            location: data.location || 'N/A',
-            selectedProducts: Array.isArray(data.selectedProducts) ? data.selectedProducts : [],
-            registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
-          };
+       return {
+  id: doc.id,
+  srNo: index + 1,
+  name: data.name || 'N/A',
+  phoneNumber: data.phoneNumber || 'N/A',
+  email: data.email || 'N/A',
+  location: data.location || 'N/A',
+  customerType: data.customerType || 'N/A',
+  organization: data.organization || 'N/A',
+  selectedProducts: Array.isArray(data.selectedProducts) ? data.selectedProducts : [],
+  registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
+};
+
 
         });
 
@@ -96,20 +101,27 @@ const RegisteredUsers = () => {
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
       const userRef = doc(db, 'OREMeet', eventId, 'registeredUsers', phoneNumber);
 
-      await setDoc(userRef, {
-        name,
-        phoneNumber,
-        email,
-        location,
-        selectedProducts,
-        registeredAt: Timestamp.now(),
-      });
+    await setDoc(userRef, {
+  name,
+  phoneNumber,
+  email,
+  location,
+  selectedProducts,
+  customerType,
+  organization,
+  registeredAt: Timestamp.now(),
+});
+
 
 
       setSuccess('User added successfully.');
       setName('');
       setPhoneNumber('');
       setSelectedProducts([]);
+      setEmail('');
+setLocation('');
+setCustomerType('');
+setOrganization('');
 
       // ✅ WhatsApp Message
       await axios.post(
@@ -174,6 +186,25 @@ const RegisteredUsers = () => {
                 </div>
               </li>
 
+<li className='form-row'>
+  <h4>Type of Customer<sup>*</sup></h4>
+  <div className='multipleitem'>
+    <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} required>
+      <option value="">Select Type</option>
+      <option value="Retail">Retail</option>
+      <option value="Distributor">Distributor</option>
+      <option value="Salon Owner">Salon Owner</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+</li>
+
+<li className='form-row'>
+  <h4>Company/Organization<sup>*</sup></h4>
+  <div className='multipleitem'>
+    <input type="text" value={organization} onChange={(e) => setOrganization(e.target.value)} required />
+  </div>
+</li>
 
 
               <li className='form-row'>
