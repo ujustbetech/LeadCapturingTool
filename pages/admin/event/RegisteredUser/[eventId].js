@@ -230,40 +230,47 @@ const RegisteredUsers = () => {
           </form>
         </section>
         {/* Registered Users Table */}
-        <table className='table-class' style={{ marginTop: '2rem' }}>
-          <thead>
-            <tr>
-              <th>Sr No</th>
-              <th>Name</th>
-              <th>Phone Number</th>
-              <th>Email</th>
-              <th>Message</th>
+     <table className='table-class' style={{ marginTop: '2rem' }}>
+  <thead>
+    <tr>
+      <th>Sr No</th>
+      <th>Name</th>
+      <th>Phone Number</th>
+      <th>Email</th>
+      <th>Type of Customer</th>
+      <th>Company/Organization</th>
+      <th>Message</th>
+      <th>Selected Products</th>
+      <th>Registered At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {registeredUsers.length > 0 ? (
+      registeredUsers.map((user, index) => (
+        <tr key={user.id}>
+          <td>{index + 1}</td>
+          <td>{user.name || 'N/A'}</td>
+          <td>{user.phoneNumber || 'N/A'}</td>
+          <td>{user.email || 'N/A'}</td>
+          <td>{user.customerType || 'N/A'}</td>
+          <td>{user.organization || 'N/A'}</td>
+          <td>{user.location || 'N/A'}</td>
+          <td>{user.selectedProducts?.join(', ') || 'N/A'}</td>
+          <td>
+            {user.registeredAt?.toDate
+              ? user.registeredAt.toDate().toLocaleString()
+              : 'N/A'}
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan="9">No users registered for this event.</td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
-              <th>Selected Products</th>
-              <th>Registered At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {registeredUsers.length > 0 ? (
-              registeredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.srNo}</td>
-                  <td>{user.name}</td>
-                  <td>{user.phoneNumber}</td>
-                  <td>{user.email || 'N/A'}</td>
-                  <td>{user.location || 'N/A'}</td>
-
-                  <td>{user.selectedProducts.join(', ') || 'N/A'}</td>
-                  <td>{user.registeredAt}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5">No users registered for this event.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </section>
     </Layout>
   );
