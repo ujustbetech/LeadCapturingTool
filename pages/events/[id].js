@@ -250,7 +250,7 @@ const [organization, setOrganization] = useState('');
 
   {/* 8. Star Rating */}
   <div className="input-group">
-    <label>Rate the Event (1 to 5)</label>
+    <label>Rate the Customer (1 to 5)</label>
     <div className="star-rating">
       {[1, 2, 3, 4, 5].map((star) => (
         <span
