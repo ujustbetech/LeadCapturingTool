@@ -287,11 +287,8 @@ setOrganization('');
           <td>{user.organization || 'N/A'}</td>
           <td>{user.location || 'N/A'}</td>
           <td>{user.selectedProducts?.join(', ') || 'N/A'}</td>
-          <td>
-            {user.registeredAt?.toDate
-              ? user.registeredAt.toDate().toLocaleString()
-              : 'N/A'}
-          </td>
+         <td>{user.registeredAt?.toDate?.().toLocaleString() || 'N/A'}</td>
+
         </tr>
       ))
     ) : (
