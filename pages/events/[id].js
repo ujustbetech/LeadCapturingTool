@@ -2,16 +2,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import axios from 'axios';
-
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
 import '../feedback.css';
-
 
 const EventLoginPage = () => {
   const router = useRouter();
   const { id } = router.query;
-const [rating, setRating] = useState(0);
 
+  const [rating, setRating] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userName, setUserName] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -20,13 +18,13 @@ const [rating, setRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const isEventEnded = eventDetails?.endTime?.seconds * 1000 < Date.now();
-  // Add these to your useState hooks:
   const [email, setEmail] = useState('');
   const [location, setLocation] = useState('');
-const [customerType, setCustomerType] = useState('');
-const [organization, setOrganization] = useState('');
+  const [customerType, setCustomerType] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [imageBase64, setImageBase64] = useState('');
 
+  const isEventEnded = eventDetails?.endTime?.seconds * 1000 < Date.now();
 
   useEffect(() => {
     if (id) {
@@ -58,6 +56,56 @@ const [organization, setOrganization] = useState('');
     );
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600;
+        const MAX_HEIGHT = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64String = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Optional: Check if base64 size is too large
+        if (base64String.length > 1000000) {
+          setError('Image too large after compression. Try a smaller image.');
+          return;
+        }
+
+        setImageBase64(base64String);
+      };
+
+      img.src = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -70,19 +118,18 @@ const [organization, setOrganization] = useState('');
 
     try {
       const userRef = doc(db, 'OREMeet', id, 'registeredUsers', phoneNumber);
-   await setDoc(userRef, {
-  name: userName,
-  phoneNumber,
-  email,
-  location,
-  selectedProducts,
-  rating,
-  customerType,
-  organization,
-  registeredAt: new Date(),
-});
-
-
+      await setDoc(userRef, {
+        name: userName,
+        phoneNumber,
+        email,
+        location,
+        selectedProducts,
+        rating,
+        customerType,
+        organization,
+        imageBase64, // ✅ image added here
+        registeredAt: new Date(),
+      });
 
       setSuccess('Thank you! Your response has been recorded.');
       setUserName('');
@@ -91,6 +138,7 @@ const [organization, setOrganization] = useState('');
       setLocation('');
       setSelectedProducts([]);
       setRating(0);
+      setImageBase64('');
       fetchRegisteredUserCount();
 
       // ✅ Send WhatsApp message
@@ -117,172 +165,178 @@ const [organization, setOrganization] = useState('');
         },
         {
           headers: {
-            Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `,
+            Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `, // Replace with environment variable ideally
             "Content-Type": "application/json"
           }
         }
       );
     } catch (err) {
       console.error(err);
-      setError('Error submitting form. Please try again.');
+      const errMsg = err.response?.data?.error?.message || err.message || 'Error submitting form.';
+      setError(`Submission failed: ${errMsg}`);
     }
   };
 
   return (
-
     <section className="feedbackContainer">
-
       <div className="feedback-form-container">
         <div className="client_logo">
-
           <img src="/mantra_logo.png" alt="Logo" />
         </div>
-        <h2 className="feedback-form-title"> {eventDetails?.name || 'Event'}</h2>
+        <h2 className="feedback-form-title">{eventDetails?.name || 'Event'}</h2>
 
+        <form onSubmit={handleSubmit}>
+          {/* Type of Customer */}
+          <div className="input-group">
+            <label>Type of Customer</label>
+            <select
+              value={customerType}
+              onChange={(e) => setCustomerType(e.target.value)}
+              disabled={isEventEnded}
+              required
+            >
+              <option value="">Select Type</option>
+              <option value="Retail">Retail</option>
+              <option value="Corporate">Corporate</option>
+              <option value="Individual">Individual</option>
+            </select>
+          </div>
 
-
-
-
-      <form onSubmit={handleSubmit}>
-
-  {/* 1. Type of Customer */}
-  <div className="input-group">
-    <label>Type of Customer</label>
-    <select
-      value={customerType}
-      onChange={(e) => setCustomerType(e.target.value)}
-      disabled={isEventEnded}
-      required
-    >
-      <option value="">Select Type</option>
-      <option value="Retail">Retail</option>
-      <option value="Corporate">Corporate</option>
-      <option value="Individual">Individual</option>
-    </select>
-  </div>
-
-  {/* 2. Mobile Number */}
-  <div className="input-group">
-    <label>Mobile Number</label>
-    <input
-      type="text"
-      name="phoneNumber"
-      value={phoneNumber}
-      onChange={(e) => setPhoneNumber(e.target.value)}
-      disabled={isEventEnded}
-      required
-    />
-  </div>
-
-  {/* 3. Select Products */}
-  <div className="input-group">
-    <label>Select Products</label>
-    <div className="checkbox-group">
-      {eventDetails?.productList?.length > 0 ? (
-        eventDetails.productList.map((product, idx) => (
-          <div className="checkbox-item" key={idx}>
+          {/* Mobile Number */}
+          <div className="input-group">
+            <label>Mobile Number</label>
             <input
-              type="checkbox"
-              id={`product-${idx}`}
-              value={product}
-              checked={selectedProducts.includes(product)}
-              onChange={() => handleProductSelection(product)}
+              type="text"
+              name="phoneNumber"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              disabled={isEventEnded}
+              required
+            />
+          </div>
+
+          {/* Select Products */}
+          <div className="input-group">
+            <label>Select Products</label>
+            <div className="checkbox-group">
+              {eventDetails?.productList?.length > 0 ? (
+                eventDetails.productList.map((product, idx) => (
+                  <div className="checkbox-item" key={idx}>
+                    <input
+                      type="checkbox"
+                      id={`product-${idx}`}
+                      value={product}
+                      checked={selectedProducts.includes(product)}
+                      onChange={() => handleProductSelection(product)}
+                      disabled={isEventEnded}
+                    />
+                    <label htmlFor={`product-${idx}`}>{product}</label>
+                  </div>
+                ))
+              ) : (
+                <p>No products listed for this event.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="input-group">
+            <label>Email Address</label>
+            <input
+              type="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isEventEnded}
+              required
+            />
+          </div>
+
+          {/* Organization */}
+          <div className="input-group">
+            <label>Company / Organization Name</label>
+            <input
+              type="text"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              disabled={isEventEnded}
+              required
+            />
+          </div>
+
+          {/* Full Name */}
+          <div className="input-group">
+            <label>Name of Customer</label>
+            <input
+              type="text"
+              name="fullName"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              disabled={isEventEnded}
+              required
+            />
+          </div>
+
+          {/* Feedback */}
+          <div className="input-group">
+            <label>Message / Quality</label>
+            <textarea
+              name="Message"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              disabled={isEventEnded}
+              required
+            ></textarea>
+          </div>
+
+          {/* Image Upload */}
+          <div className="input-group">
+            <label>Capture / Upload Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageUpload}
               disabled={isEventEnded}
             />
-            <label htmlFor={`product-${idx}`}>{product}</label>
+            {imageBase64 && (
+              <img
+                src={imageBase64}
+                alt="Preview"
+                style={{ width: '100px', marginTop: '10px', borderRadius: '8px' }}
+              />
+            )}
           </div>
-        ))
-      ) : (
-        <p>No products listed for this event.</p>
-      )}
-    </div>
-  </div>
 
-  {/* 4. Email */}
-  <div className="input-group">
-    <label>Email Address</label>
-    <input
-      type="email"
-      name="email"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      disabled={isEventEnded}
-      required
-    />
-  </div>
+          {/* Rating */}
+          <div className="input-group">
+            <label>Rate the Customer (1 to 5)</label>
+            <div className="star-rating">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  className={`star ${rating >= star ? 'filled' : ''}`}
+                  onClick={() => !isEventEnded && setRating(star)}
+                  style={{
+                    cursor: isEventEnded ? 'not-allowed' : 'pointer',
+                    fontSize: '24px',
+                    color: rating >= star ? '#f39c12' : '#ccc',
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+          </div>
 
-  {/* 5. Company/Organization Name */}
-  <div className="input-group">
-    <label>Company / Organization Name</label>
-    <input
-      type="text"
-      value={organization}
-      onChange={(e) => setOrganization(e.target.value)}
-      disabled={isEventEnded}
-      required
-    />
-  </div>
+          <button className="submitbtns" type="submit" disabled={isEventEnded}>
+            Submit
+          </button>
 
-  {/* 6. Name of Customer */}
-  <div className="input-group">
-    <label>Name of Customer</label>
-    <input
-      type="text"
-      name="fullName"
-      value={userName}
-      onChange={(e) => setUserName(e.target.value)}
-      disabled={isEventEnded}
-      required
-    />
-  </div>
-
-  {/* 7. Message/Quality */}
-  <div className="input-group">
-    <label>Message / Quality</label>
-    <textarea
-      name="Message"
-      value={location}
-      onChange={(e) => setLocation(e.target.value)}
-      disabled={isEventEnded}
-      required
-    ></textarea>
-  </div>
-
-  {/* 8. Star Rating */}
-  <div className="input-group">
-    <label>Rate the Customer (1 to 5)</label>
-    <div className="star-rating">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`star ${rating >= star ? 'filled' : ''}`}
-          onClick={() => !isEventEnded && setRating(star)}
-          style={{
-            cursor: isEventEnded ? 'not-allowed' : 'pointer',
-            fontSize: '24px',
-            color: rating >= star ? '#f39c12' : '#ccc',
-          }}
-        >
-          ★
-        </span>
-      ))}
-    </div>
-  </div>
-
-  <button className="submitbtns" type="submit" disabled={isEventEnded}>
-    Submit
-  </button>
-
-  {isEventEnded && (
-    <p style={{ color: 'gray' }}>
-      Registration is closed. The event has ended.
-    </p>
-  )}
-  {error && <p style={{ color: 'red' }}>{error}</p>}
-  {success && <p style={{ color: 'green' }}>{success}</p>}
-</form>
-
-
+          {isEventEnded && <p style={{ color: 'gray' }}>Registration is closed. The event has ended.</p>}
+          {error && <p style={{ color: 'red' }}>{error}</p>}
+          {success && <p style={{ color: 'green' }}>{success}</p>}
+        </form>
       </div>
     </section>
   );
