@@ -10,26 +10,24 @@ import ExportToExcel from '../../../admin/ExporttoExcel';
 const RegisteredUsers = () => {
   const router = useRouter();
   const { eventId } = router.query;
+
   const [email, setEmail] = useState('');
   const [location, setLocation] = useState('');
-
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-const [customerType, setCustomerType] = useState('');
-const [organization, setOrganization] = useState('');
-
-  const [availableProducts, setAvailableProducts] = useState([]); // dynamic products
-
-  // Admin form state
+  const [customerType, setCustomerType] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [availableProducts, setAvailableProducts] = useState([]);
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [eventName, setEventName] = useState('');
+  const [rating, setRating] = useState('');
+  const [imageBase64, setImageBase64] = useState('');
 
   useEffect(() => {
     if (!eventId) return;
-
 
     const fetchEventProducts = async () => {
       try {
@@ -38,7 +36,7 @@ const [organization, setOrganization] = useState('');
         if (eventSnap.exists()) {
           const data = eventSnap.data();
           setAvailableProducts(Array.isArray(data.productList) ? data.productList : []);
-          setEventName(data.name || 'ORE Meet'); // 👈 Add this line
+          setEventName(data.name || 'ORE Meet');
         }
       } catch (err) {
         console.error('Error fetching event products:', err);
@@ -49,23 +47,22 @@ const [organization, setOrganization] = useState('');
       try {
         const registeredUsersCollection = collection(db, `OREMeet/${eventId}/registeredUsers`);
         const snapshot = await getDocs(registeredUsersCollection);
-
         const users = snapshot.docs.map((doc, index) => {
           const data = doc.data();
-       return {
-  id: doc.id,
-  srNo: index + 1,
-  name: data.name || 'N/A',
-  phoneNumber: data.phoneNumber || 'N/A',
-  email: data.email || 'N/A',
-  location: data.location || 'N/A',
-  customerType: data.customerType || 'N/A',
-  organization: data.organization || 'N/A',
-  selectedProducts: Array.isArray(data.selectedProducts) ? data.selectedProducts : [],
-  registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
-};
-
-
+          return {
+            id: doc.id,
+            srNo: index + 1,
+            name: data.name || 'N/A',
+            phoneNumber: data.phoneNumber || 'N/A',
+            email: data.email || 'N/A',
+            location: data.location || 'N/A',
+            customerType: data.customerType || 'N/A',
+            organization: data.organization || 'N/A',
+            selectedProducts: Array.isArray(data.selectedProducts) ? data.selectedProducts : [],
+            registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
+            rating: data.rating || 'N/A',
+            imageBase64: data.imageBase64 || ''
+          };
         });
 
         setRegisteredUsers(users);
@@ -87,6 +84,18 @@ const [organization, setOrganization] = useState('');
     );
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result?.split(',')[1];
+      setImageBase64(base64 || '');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -101,29 +110,30 @@ const [organization, setOrganization] = useState('');
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
       const userRef = doc(db, 'OREMeet', eventId, 'registeredUsers', phoneNumber);
 
-    await setDoc(userRef, {
-  name,
-  phoneNumber,
-  email,
-  location,
-  selectedProducts,
-  customerType,
-  organization,
-  registeredAt: Timestamp.now(),
-});
-
-
+      await setDoc(userRef, {
+        name,
+        phoneNumber,
+        email,
+        location,
+        selectedProducts,
+        customerType,
+        organization,
+        registeredAt: Timestamp.now(),
+        rating,
+        imageBase64
+      });
 
       setSuccess('User added successfully.');
       setName('');
       setPhoneNumber('');
       setSelectedProducts([]);
       setEmail('');
-setLocation('');
-setCustomerType('');
-setOrganization('');
+      setLocation('');
+      setCustomerType('');
+      setOrganization('');
+      setRating('');
+      setImageBase64('');
 
-      // ✅ WhatsApp Message
       await axios.post(
         `https://graph.facebook.com/v19.0/712485631939049/messages`,
         {
@@ -147,73 +157,65 @@ setOrganization('');
         },
         {
           headers: {
-            Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `,
+            Authorization: `Bearer YOUR_TOKEN_HERE`,
             "Content-Type": "application/json"
           }
         }
       );
-
     } catch (err) {
       console.error("Submit or WhatsApp error:", err.response?.data || err.message);
       setError('Error submitting or sending message.');
     }
   };
 
-
-
   return (
     <Layout>
       <section className='c-userslist box'>
         <div className="header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <ExportToExcel eventId={eventId} />
-          {/* <button className="m-button-5" onClick={() => window.history.back()}>Back</button> */}
         </div>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {success && <p style={{ color: 'green' }}>{success}</p>}
+
         <section className='c-form box'>
           <h2>Add New Lead</h2>
-
-
-          {/* Admin Add Form */}
           <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
             <ul>
               <li className='form-row'>
                 <h4>Person Name<sup>*</sup></h4>
                 <div className='multipleitem'>
-
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
               </li>
 
-<li className='form-row'>
-  <h4>Type of Customer<sup>*</sup></h4>
-  <div className='multipleitem'>
-    <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} required>
-      <option value="">Select Type</option>
-      <option value="Retail">Retail</option>
-      <option value="Distributor">Distributor</option>
-      <option value="Salon Owner">Salon Owner</option>
-      <option value="Other">Other</option>
-    </select>
-  </div>
-</li>
+              <li className='form-row'>
+                <h4>Type of Customer<sup>*</sup></h4>
+                <div className='multipleitem'>
+                  <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} required>
+                    <option value="">Select Type</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Distributor">Distributor</option>
+                    <option value="Salon Owner">Salon Owner</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </li>
 
-<li className='form-row'>
-  <h4>Company/Organization<sup>*</sup></h4>
-  <div className='multipleitem'>
-    <input type="text" value={organization} onChange={(e) => setOrganization(e.target.value)} required />
-  </div>
-</li>
-
+              <li className='form-row'>
+                <h4>Company/Organization<sup>*</sup></h4>
+                <div className='multipleitem'>
+                  <input type="text" value={organization} onChange={(e) => setOrganization(e.target.value)} required />
+                </div>
+              </li>
 
               <li className='form-row'>
                 <h4>Phone<sup>*</sup></h4>
                 <div className='multipleitem'>
-
                   <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
                 </div>
               </li>
+
               <li className='form-row'>
                 <h4>Email<sup>*</sup></h4>
                 <div className='multipleitem'>
@@ -229,10 +231,22 @@ setOrganization('');
               </li>
 
               <li className='form-row'>
+                <h4>Star Rating</h4>
+                <div className='multipleitem'>
+                  <input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
+                </div>
+              </li>
+
+              <li className='form-row'>
+                <h4>Upload Image</h4>
+                <div className='multipleitem'>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} />
+                </div>
+              </li>
+
+              <li className='form-row'>
                 <h4>Select Products<sup>*</sup></h4>
                 <div className='multipleitem'>
-
-
                   {availableProducts.length > 0 ? (
                     availableProducts.map((product) => (
                       <label key={product} style={{ marginRight: '10px' }}>
@@ -250,55 +264,65 @@ setOrganization('');
                 </div>
               </li>
 
-
               <li className='form-row'>
                 <div>
                   <button type="submit" className="submitbtn">Add User</button>
-
                 </div>
               </li>
             </ul>
           </form>
         </section>
-        {/* Registered Users Table */}
-     <table className='table-class' style={{ marginTop: '2rem' }}>
-  <thead>
-    <tr>
-      <th>Sr No</th>
-      <th>Name</th>
-      <th>Phone Number</th>
-      <th>Email</th>
-      <th>Type of Customer</th>
-      <th>Company/Organization</th>
-      <th>Message</th>
-      <th>Selected Products</th>
-      <th>Registered At</th>
-    </tr>
-  </thead>
-  <tbody>
-    {registeredUsers.length > 0 ? (
-      registeredUsers.map((user, index) => (
-        <tr key={user.id}>
-          <td>{index + 1}</td>
-          <td>{user.name || 'N/A'}</td>
-          <td>{user.phoneNumber || 'N/A'}</td>
-          <td>{user.email || 'N/A'}</td>
-          <td>{user.customerType || 'N/A'}</td>
-          <td>{user.organization || 'N/A'}</td>
-          <td>{user.location || 'N/A'}</td>
-          <td>{user.selectedProducts?.join(', ') || 'N/A'}</td>
-         <td>{user.registeredAt?.toDate?.().toLocaleString() || 'N/A'}</td>
 
-        </tr>
-      ))
-    ) : (
-      <tr>
-        <td colSpan="9">No users registered for this event.</td>
-      </tr>
-    )}
-  </tbody>
-</table>
-
+        <table className='table-class' style={{ marginTop: '2rem' }}>
+          <thead>
+            <tr>
+              <th>Sr No</th>
+              <th>Name</th>
+              <th>Phone Number</th>
+              <th>Email</th>
+              <th>Type of Customer</th>
+              <th>Company/Organization</th>
+              <th>Message</th>
+              <th>Selected Products</th>
+              <th>Registered At</th>
+              <th>Star Rating</th>
+              <th>Image</th>
+            </tr>
+          </thead>
+          <tbody>
+            {registeredUsers.length > 0 ? (
+              registeredUsers.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.srNo}</td>
+                  <td>{user.name}</td>
+                  <td>{user.phoneNumber}</td>
+                  <td>{user.email}</td>
+                  <td>{user.customerType}</td>
+                  <td>{user.organization}</td>
+                  <td>{user.location}</td>
+                  <td>{user.selectedProducts?.join(', ')}</td>
+                  <td>{user.registeredAt}</td>
+                  <td>{user.rating}</td>
+                  <td>
+                    {user.imageBase64 ? (
+                      <img
+                        src={`${user.imageBase64}`}
+                        alt="User"
+                        style={{ width: 50, height: 50, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      'No Image'
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="11">No users registered for this event.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </section>
     </Layout>
   );
