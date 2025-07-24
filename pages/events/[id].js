@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import axios from 'axios';
-import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import '../feedback.css';
 
 const EventLoginPage = () => {
@@ -23,6 +23,7 @@ const EventLoginPage = () => {
   const [customerType, setCustomerType] = useState('');
   const [organization, setOrganization] = useState('');
   const [imageBase64, setImageBase64] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEventEnded = eventDetails?.endTime?.seconds * 1000 < Date.now();
 
@@ -110,14 +111,10 @@ const EventLoginPage = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
-
-    if (!userName || !phoneNumber || !email || !location || selectedProducts.length === 0) {
-      setError('Please fill all fields and select at least one product.');
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
-      const userRef = doc(db, 'OREMeet', id, 'registeredUsers', phoneNumber);
+      const userRef = doc(db, 'OREMeet', id, 'registeredUsers', phoneNumber || `user_${Date.now()}`);
       await setDoc(userRef, {
         name: userName,
         phoneNumber,
@@ -127,11 +124,13 @@ const EventLoginPage = () => {
         rating,
         customerType,
         organization,
-        imageBase64, // ✅ image added here
-        registeredAt: new Date(),
+        imageBase64,
+        registeredAt: Timestamp.now(),
       });
 
       setSuccess('Thank you! Your response has been recorded.');
+
+      // Clear all fields
       setUserName('');
       setPhoneNumber('');
       setEmail('');
@@ -139,43 +138,54 @@ const EventLoginPage = () => {
       setSelectedProducts([]);
       setRating(0);
       setImageBase64('');
+      setCustomerType('');
+      setOrganization('');
       fetchRegisteredUserCount();
 
-      // ✅ Send WhatsApp message
-      await axios.post(
-        `https://graph.facebook.com/v19.0/712485631939049/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: phoneNumber,
-          type: "template",
-          template: {
-            name: "oremeet_thankyoumessage",
-            language: { code: "en" },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  { type: "text", text: userName },
-                  { type: "text", text: eventDetails?.name || "the event" },
-                  { type: "text", text: selectedProducts.join(', ') || "None" }
-                ]
-              }
-            ]
+      // Optional: Send WhatsApp message only if phone number is provided
+      if (phoneNumber) {
+        await axios.post(
+          `https://graph.facebook.com/v19.0/712485631939049/messages`,
+          {
+            messaging_product: "whatsapp",
+            to: phoneNumber,
+            type: "template",
+            template: {
+              name: "oremeet_thankyoumessage",
+              language: { code: "en" },
+              components: [
+                {
+                  type: "body",
+                  parameters: [
+                    { type: "text", text: userName || "Guest" },
+                    { type: "text", text: eventDetails?.name || "the event" },
+                    { type: "text", text: selectedProducts.join(', ') || "None" }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `,
+              "Content-Type": "application/json"
+            }
           }
-        },
-        {
-          headers: {
-            Authorization: `Bearer EAAKEGfZAV7pMBOzNQwpceyybpc3VaOZBcFMGkofz4h4ZAwUMAeouY8Q9ZB6DMyP471Sgk1kZCwv8ssqFlNICqDM9uEElrR8y6saxfXRejnduTB6LzVb0of2fZAzZB53FBv4eJTXABR0zzBHRcjtdTLjJc9pqbZBuVkc9grNOIkRYZA1gNq2hcqgWscUqDBiZCIOGfdYQZDZD `, // Replace with environment variable ideally
-            "Content-Type": "application/json"
-          }
-        }
-      );
+        );
+      }
+
     } catch (err) {
       console.error(err);
       const errMsg = err.response?.data?.error?.message || err.message || 'Error submitting form.';
       setError(`Submission failed: ${errMsg}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return <p>Loading event details...</p>;
+  }
 
   return (
     <section className="feedbackContainer">
@@ -193,13 +203,32 @@ const EventLoginPage = () => {
               value={customerType}
               onChange={(e) => setCustomerType(e.target.value)}
               disabled={isEventEnded}
-              required
             >
               <option value="">Select Type</option>
               <option value="Retail">Retail</option>
               <option value="Corporate">Corporate</option>
               <option value="Individual">Individual</option>
             </select>
+          </div>
+
+
+          {/* Image Upload */}
+          <div className="input-group">
+            <label>Capture / Upload Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageUpload}
+              disabled={isEventEnded}
+            />
+            {imageBase64 && (
+              <img
+                src={imageBase64}
+                alt="Preview"
+                style={{ width: '100px', marginTop: '10px', borderRadius: '8px' }}
+              />
+            )}
           </div>
 
           {/* Mobile Number */}
@@ -211,7 +240,6 @@ const EventLoginPage = () => {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               disabled={isEventEnded}
-              required
             />
           </div>
 
@@ -248,7 +276,6 @@ const EventLoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isEventEnded}
-              required
             />
           </div>
 
@@ -260,7 +287,6 @@ const EventLoginPage = () => {
               value={organization}
               onChange={(e) => setOrganization(e.target.value)}
               disabled={isEventEnded}
-              required
             />
           </div>
 
@@ -273,7 +299,6 @@ const EventLoginPage = () => {
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               disabled={isEventEnded}
-              required
             />
           </div>
 
@@ -285,28 +310,10 @@ const EventLoginPage = () => {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               disabled={isEventEnded}
-              required
             ></textarea>
           </div>
 
-          {/* Image Upload */}
-          <div className="input-group">
-            <label>Capture / Upload Photo</label>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageUpload}
-              disabled={isEventEnded}
-            />
-            {imageBase64 && (
-              <img
-                src={imageBase64}
-                alt="Preview"
-                style={{ width: '100px', marginTop: '10px', borderRadius: '8px' }}
-              />
-            )}
-          </div>
+          
 
           {/* Rating */}
           <div className="input-group">
@@ -329,8 +336,8 @@ const EventLoginPage = () => {
             </div>
           </div>
 
-          <button className="submitbtns" type="submit" disabled={isEventEnded}>
-            Submit
+          <button className="submitbtns" type="submit" disabled={isEventEnded || isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit'}
           </button>
 
           {isEventEnded && <p style={{ color: 'gray' }}>Registration is closed. The event has ended.</p>}
